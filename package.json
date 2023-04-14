@@ -1,0 +1,34 @@
+{
+  "name": "vueboards-api",
+  "version": "0.0.1",
+  "description": "Vueboards server",
+  "main": "index.js",
+  "scripts": {
+    "setup": "npm install & node setup.js",
+    "start": "node index.js",
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/ktsalik/vueboards-api.git"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "sqlite"
+  ],
+  "author": "Costas Tsalikides",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ktsalik/vueboards-api/issues"
+  },
+  "homepage": "https://github.com/ktsalik/vueboards-api#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "md5": "^2.3.0",
+    "socket.io": "^4.6.1",
+    "sqlite3": "^5.1.6",
+    "uniqid": "^5.4.0"
+  }
+}
