@@ -1,6 +1,7 @@
 const db = require('../database');
 const md5 = require('md5');
 const uniqid = require('uniqid');
+const { isValidEmail } = require('../helpers');
 
 const login = (req, res) => {
   const username = req.body.username;
@@ -54,8 +55,10 @@ const login = (req, res) => {
             });
           }
         } else {
+          const emailGiven = isValidEmail(username);
+
           db.run(`
-            INSERT INTO users (username, password, key) VALUES (?, ?, ?)
+            INSERT INTO users (${emailGiven ? 'email' : 'username'}, password, key) VALUES (?, ?, ?)
           `, [
             username,
             password,
