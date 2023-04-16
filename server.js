@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const loginController = require('./controllers/loginController');
-const { createBoard, getBoards, updateBoard } = require('./controllers/boardsController');
+const { createBoard, getBoards, updateBoard, getBoard } = require('./controllers/boardsController');
 const db = require('./database');
 
 class Server {
@@ -64,6 +64,7 @@ class Server {
     });
 
     apiRouter.post('/boards/new', createBoard);
+    apiRouter.get('/boards/:boardId', getBoard);
     apiRouter.get('/boards', getBoards);
     apiRouter.post('/boards/:boardId/update', updateBoard);
 
