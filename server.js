@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const loginController = require('./controllers/loginController');
+const { createBoard, getBoards, updateBoard } = require('./controllers/boardsController');
+const db = require('./database');
 
 class Server {
   constructor() {
@@ -23,14 +25,49 @@ class Server {
       res.sendFile(__dirname + '/public/index.html');
     });
 
-    app.get('/api', (req, res) => {
+    app.post('/login', loginController.login);
+
+    const apiRouter = express.Router();
+
+    apiRouter.use((req, res, next) => {
+      const key = req.query.key || req.body.key;
+
+      db.get(`SELECT id FROM users WHERE key = ?`, [key], (err, row) => {
+        if (err) {
+          res.json({
+            code: 500,
+            status: 'error',
+            error: err.message,
+            message: 'Contact support',
+          });
+        } else {
+          if (row) {
+            res.locals.userId = row.id;
+            next();
+          } else {
+            res.json({
+              code: 401,
+              status: 'error',
+              error: 'Invalid API key',
+              message: 'Try to login',
+            });
+          }
+        }
+      });
+    });
+
+    apiRouter.get('/', (req, res) => {
       res.json({
         name: 'Vueboards API',
         version: '0.0.1',
       });
     });
 
-    app.post('/login', loginController.login);
+    apiRouter.post('/boards/new', createBoard);
+    apiRouter.get('/boards', getBoards);
+    apiRouter.post('/boards/:boardId/update', updateBoard);
+
+    app.use('/api', apiRouter);
 
     app.use((req, res) => {
       res.sendFile(__dirname + '/public/index.html');
