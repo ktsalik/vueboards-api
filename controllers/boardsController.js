@@ -75,6 +75,30 @@ const getBoards = (req, res) => {
   });
 };
 
+const getBoard = (req, res) => {
+  db.get(`
+    SELECT *
+    FROM boards
+    JOIN board_users ON boards.id = board_users.board_id
+    WHERE id = ? AND user_id = ? AND permissions = 'admin'
+  `, [
+    req.params.boardId,
+    res.locals.userId,
+  ], (err, row) => {
+    if (err) {
+      console.log(err);
+      res.json({
+        code: 500,
+        status: 'error',
+        error: 'Cannot get board',
+        message: 'Try again or contact support',
+      });
+    } else {
+      res.json(row);
+    }
+  });
+};
+
 const updateBoard = async (req, res) => {
   const boardId = req.params.boardId;
   
@@ -149,6 +173,7 @@ const deleteBoard = (req, res) => {
 module.exports = {
   createBoard,
   getBoards,
+  getBoard,
   updateBoard,
   deleteBoard,
 };
