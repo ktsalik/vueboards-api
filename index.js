@@ -11,5 +11,9 @@ process.on('exit', function() {
 });
 
 function initIo(io) {
-  
+  io.on('connection', (socket) => {
+    console.log('a user connected');
+
+    socket.emit('foo', 'bar');
+  });
 }

@@ -3,6 +3,8 @@ const cors = require('cors');
 const loginController = require('./controllers/loginController');
 const { createBoard, getBoards, updateBoard, getBoard } = require('./controllers/boardsController');
 const db = require('./database');
+const { addColumn, updateColumn, deleteColumn } = require('./controllers/columnsController');
+const { addStory } = require('./controllers/storiesController');
 
 class Server {
   constructor() {
@@ -32,28 +34,30 @@ class Server {
     apiRouter.use((req, res, next) => {
       const key = req.query.key || req.body.key;
 
-      db.get(`SELECT id FROM users WHERE key = ?`, [key], (err, row) => {
-        if (err) {
-          res.json({
-            code: 500,
-            status: 'error',
-            error: err.message,
-            message: 'Contact support',
-          });
+      try {
+        const user = db
+          .prepare(`SELECT id FROM users WHERE key = ?`)
+          .get(key);
+
+        if (user) {
+          res.locals.userId = user.id;
+          next();
         } else {
-          if (row) {
-            res.locals.userId = row.id;
-            next();
-          } else {
-            res.json({
-              code: 401,
-              status: 'error',
-              error: 'Invalid API key',
-              message: 'Try to login',
-            });
-          }
+          res.json({
+            code: 401,
+            status: 'error',
+            error: 'Invalid API key',
+            message: 'Try to login',
+          });
         }
-      });
+      } catch (err) {
+        res.json({
+          code: 500,
+          status: 'error',
+          error: err.message,
+          message: 'Try again or contact support',
+        });
+      }
     });
 
     apiRouter.get('/', (req, res) => {
@@ -63,21 +67,19 @@ class Server {
       });
     });
 
+    apiRouter.get( '/boards', getBoards);
     apiRouter.post('/boards/new', createBoard);
-    apiRouter.get('/boards/:boardId', getBoard);
-    apiRouter.get('/boards', getBoards);
+    apiRouter.get( '/boards/:boardId', getBoard);
     apiRouter.post('/boards/:boardId/update', updateBoard);
+    apiRouter.post('/boards/:boardId/columns/add', addColumn);
+    apiRouter.post('/boards/:boardId/columns/:columnId/update', updateColumn);
+    apiRouter.post('/boards/:boardId/columns/:columnId/delete', deleteColumn);
+    apiRouter.post('/boards/:boardId/columns/:columnId/stories/add', addStory);
 
     app.use('/api', apiRouter);
 
     app.use((req, res) => {
       res.sendFile(__dirname + '/public/index.html');
-    });
-
-    io.on('connection', (socket) => {
-      console.log('a user connected');
-
-      socket.emit('foo', 'bar');
     });
 
     this.app = app;

@@ -1,148 +1,142 @@
 const db = require('../database');
 
 const createBoard = (req, res) => {
-  const key = req.body.key;
-  const newBoardName = req.body.name;
+  const newBoardName = req.body.name.trim();
 
   if (newBoardName.length > 0) {
-    db.run(`
-      INSERT INTO boards (name, date_created) VALUES (?, ?);
-    `, [
-      newBoardName,
-      Date.now(),
-    ], function(err) {
-      if (err) {
-        res.json({
-          code: 500,
-          status: 'error',
-          error: err.message,
-          message: 'Contact support',
-        });
-      } else {
-        db.run(`
-          INSERT INTO board_users (board_id, user_id, permissions) VALUES (?, ?, ?)
-        `, [
-          this.lastID,
-          res.locals.userId,
-          'admin',
-        ], (err) => {
-          if (err) {
-            console.log(err);
-            res.json({
-              code: 500,
-              status: 'error',
-              error: err.message,
-              message: 'Contact support',
-            });
-          } else {
-            res.json({
-              code: 200,
-              status: 'ok',
-            });
-          }
-        })
-      }
-    });
+    try {
+      const newBoard = db
+        .prepare(`INSERT INTO boards (name, date_created) VALUES (?, ?)`)
+        .run(newBoardName, Date.now());
+
+      db
+        .prepare(`INSERT INTO board_users (board_id, user_id, permissions) VALUES (?, ?, ?)`)
+        .run(newBoard.lastInsertRowid, res.locals.userId, 'admin');
+
+      res.json({
+        code: 200,
+        status: 'ok',
+      });
+    } catch (err) {
+      res.json({
+        code: 500,
+        status: 'error',
+        error: err.message,
+        message: 'Please try again or contact support',
+      });
+    }
   }
 };
 
 const getBoards = (req, res) => {
-  db.all(`
-    SELECT *
-    FROM boards
-    JOIN board_users ON boards.id = board_users.board_id
-    WHERE user_id = ?
-    ORDER BY id DESC
-  `, [res.locals.userId], (err, rows) => {
-    if (err) {
-      console.log(err);
-      res.json({
-        code: 500,
-        status: 'error',
-        error: err,
-        message: 'Contact support',
-      });
-    } else {
-      const boards = rows.map((record) => {
-        return {
-          id: record.id,
-          name: record.name,
-          date: record.date_created,
-        };
-      });
-      res.json(boards);
-    }
-  });
+  try {
+    const boardsData = db
+      .prepare(`
+        SELECT *
+        FROM boards
+        JOIN board_users ON boards.id = board_users.board_id
+        WHERE user_id = ?
+        ORDER BY id DESC
+      `)
+      .all(res.locals.userId);
+
+    const boards = boardsData.map((record) => {
+      return {
+        id: record.id,
+        name: record.name,
+        date: record.date_created,
+      };
+    });
+
+    res.json({
+      code: 200,
+      status: 'ok',
+      data: boards,
+    });
+  } catch (err) {
+    res.json({
+      code: 500,
+      status: 'error',
+      error: err.message,
+      message: 'Please try again or contact support',
+    });
+  }
 };
 
 const getBoard = (req, res) => {
-  db.get(`
-    SELECT *
-    FROM boards
-    JOIN board_users ON boards.id = board_users.board_id
-    WHERE id = ? AND user_id = ? AND permissions = 'admin'
-  `, [
-    req.params.boardId,
-    res.locals.userId,
-  ], (err, row) => {
-    if (err) {
-      console.log(err);
+  try {
+    const board = db
+      .prepare(`
+        SELECT *
+        FROM boards
+        JOIN board_users ON boards.id = board_users.board_id
+        WHERE id = ? AND user_id = ?
+      `)
+      .get(req.params.boardId, res.locals.userId);
+
+    if (board) {
+      const columns = db
+        .prepare(`SELECT * FROM board_columns WHERE board_id = ?`)
+        .all(board.id);
+      
+      board.columns = columns;
+
+      board.columns.forEach((column, i, columns) => {
+        const stories = db
+          .prepare(`SELECT * FROM stories WHERE column_id = ?`)
+          .all(column.id);
+        
+        columns[i].stories = stories;
+      });
+
       res.json({
-        code: 500,
-        status: 'error',
-        error: 'Cannot get board',
-        message: 'Try again or contact support',
+        code: 200,
+        status: 'ok',
+        data: board,
       });
     } else {
-      res.json(row);
+      res.json({
+        code: 404,
+        status: 'not found',
+        message: `Board with id ${req.params.boardId} not found`,
+      });
     }
-  });
+  } catch (err) {
+    res.json({
+      code: 500,
+      status: 'error',
+      error: err.message,
+      message: 'Please try again or contact support',
+    });
+  }
 };
 
 const updateBoard = async (req, res) => {
   const boardId = req.params.boardId;
   
   try {
-    const board = await new Promise((resolve, reject) => {
-      db.get(`
+    const board = db
+      .prepare(`
         SELECT *
         FROM boards
         JOIN board_users ON boards.id = board_users.board_id
         WHERE id = ? AND user_id = ? AND permissions = 'admin'
-      `, [
-        boardId,
-        res.locals.userId,
-      ], (err, row) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(row);
-        }
-      });
-    });
-
+      `)
+      .get(boardId, res.locals.userId);
+    
     if (board) {
-      if (req.body.name && req.body.name.trim().length > 0) {
-        board.name = req.body.name;
-      }
+      let newName;
       
-      await new Promise((resolve, reject) => {
-        db.run(`
-          UPDATE boards
-          SET name = ?
-          WHERE id = ?
-        `, [
-          board.name,
-          boardId,
-        ], (err) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve();
-          }
-        });
-      });
+      if (req.body.name && req.body.name.trim().length > 0) {
+        newName = req.body.name.trim();
+      } else {
+        newName = board.name;
+      }
 
+      db
+        .prepare(`UPDATE boards SET name = ? WHERE id = ?`)
+        .run(newName, board.id);
+      
       res.json({
         code: 200,
         status: 'ok',
@@ -152,11 +146,9 @@ const updateBoard = async (req, res) => {
         code: 400,
         status: 'error',
         error: 'Not authorized',
-        message: 'Contact support',
       });
     }
   } catch (err) {
-    console.log(err);
     res.json({
       code: 500,
       status: 'error',
@@ -167,7 +159,36 @@ const updateBoard = async (req, res) => {
 };
 
 const deleteBoard = (req, res) => {
-
+  const boardId = req.params.boardId;
+  
+  try {
+    const board = db
+      .prepare(`
+        SELECT *
+        FROM boards
+        JOIN board_users ON boards.id = board_users.board_id
+        WHERE id = ? AND user_id = ? AND permissions = 'admin'
+      `)
+      .get(boardId, res.locals.userId);
+    
+    if (board) {
+      db
+        .prepare(`DELETE FROM boards WHERE id = ?`)
+        .run(board.id);
+      
+      res.json({
+        code: 200,
+        status: 'ok',
+      });
+    }
+  } catch (err) {
+    res.json({
+      code: 500,
+      status: 'error',
+      error: err.message,
+      message: 'Please try again or contact support',
+    });
+  }
 };
 
 module.exports = {
