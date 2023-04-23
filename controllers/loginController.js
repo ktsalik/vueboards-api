@@ -46,10 +46,48 @@ const login = (req, res) => {
         const emailGiven = isValidEmail(username);
         const key = md5(uniqid());
 
-        db
+        const newUser = db
           .prepare(`INSERT INTO users (${emailGiven ? 'email' : 'username'}, password, key) VALUES (?, ?, ?)`)
           .run(username, password, key);
         
+        const createDemoBoard = db.transaction(() => {
+          const board = db
+            .prepare(`INSERT INTO boards (name, date_created) VALUES (@name, @date_created)`)
+            .run({
+              name: 'Demo',
+              date_created: Date.now(),
+            });
+
+          db
+            .prepare(`INSERT INTO board_users (board_id, user_id, permissions) VALUES (?, ?, ?)`)
+            .run(board.lastInsertRowid, newUser.lastInsertRowid, 'admin');
+
+          const columnTodo = db
+            .prepare(`INSERT INTO board_columns (board_id, name) VALUES (${board.lastInsertRowid}, 'Todo')`)
+            .run();
+
+          const columnDone = db
+            .prepare(`INSERT INTO board_columns (board_id, name) VALUES (${board.lastInsertRowid}, 'Done')`)
+            .run();
+          
+          db
+            .prepare(`INSERT INTO stories (column_id, name, description) VALUES (?, ?, ?)`)
+            .run(columnTodo.lastInsertRowid, 'Create website header', `The website should have a header component, visible everywhere at the very top of the page.`);
+
+          db
+            .prepare(`INSERT INTO stories (column_id, name, description) VALUES (?, ?, ?)`)
+            .run(columnTodo.lastInsertRowid, 'Create website footer', `The website should have a footer component, visible everywhere at the very bottom of the page.`);
+
+          db
+            .prepare(`INSERT INTO stories (column_id, name, description) VALUES (?, ?, ?)`)
+            .run(columnTodo.lastInsertRowid, 'Create a menu', `The website should have a navigation menu, visible everywhere below the header component.`);
+        
+          db
+            .prepare(`INSERT INTO stories (column_id, name) VALUES (?, ?)`)
+            .run(columnDone.lastInsertRowid, 'Create website project directory');
+        });
+        createDemoBoard();
+
         res.json({
           code: 200,
           status: 'ok',
