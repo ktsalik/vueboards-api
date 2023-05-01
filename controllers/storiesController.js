@@ -133,6 +133,82 @@ const updateStory = (req, res) => {
   }
 };
 
+const moveStory = (req, res) => {
+  const boardId = req.params.boardId;
+  const columnId = req.params.columnId;
+  const storyId = req.params.storyId;
+  const toColumnId = req.params.toColumnId;
+
+  try {
+    let isAllowed = hasPermissionsToBoard(res.locals.userId, boardId, ['write', 'admin']);
+    const columnBelongsToBoard = db
+      .prepare(`SELECT COUNT(*) AS count FROM board_columns WHERE board_id = ? AND id = ?`)
+      .get(boardId, columnId).count === 1;
+    
+    isAllowed &= columnBelongsToBoard;
+
+    const storyBelongsToColumn = db
+      .prepare(`SELECT COUNT(*) AS count FROM stories WHERE column_id = ? AND id = ?`)
+      .get(columnId, storyId).count === 1;
+    
+    isAllowed &= storyBelongsToColumn;
+
+    if (columnId !== toColumnId) {
+      const moveToColumnBelongsToBoard = db
+        .prepare(`SELECT COUNT(*) AS count FROM board_columns WHERE board_id = ? AND id = ?`)
+        .get(boardId, toColumnId).count === 1;
+      
+      isAllowed &= moveToColumnBelongsToBoard;
+    }
+
+    if (isAllowed) {
+      const storiesInColumn = db
+        .prepare(`
+          SELECT *
+          FROM stories
+          WHERE column_id = ? AND id != ?
+        `)
+        .all(toColumnId, storyId);
+
+      const positions = {
+        [storyId]: req.body.position,
+      };
+
+      for (let i = 0; i < storiesInColumn.length; i++) {
+        positions[storiesInColumn[i].id] = i + 1;
+
+        if (i + 1 >= req.body.position) {
+          positions[storiesInColumn[i].id]++;
+        }
+      }
+
+      for (let storyId in positions) {
+        db
+          .prepare(`UPDATE stories SET position = ? WHERE id = ?`)
+          .run(positions[storyId], storyId);
+      }
+
+      if (columnId !== toColumnId) {
+        db
+          .prepare(`UPDATE stories SET column_id = ? WHERE id = ?`)
+          .run(toColumnId, storyId);
+      }
+
+      res.json({
+        code: 200,
+        status: 'ok',
+      });
+    }
+  } catch (err) {
+    res.json({
+      code: 500,
+      status: 'error',
+      error: err.message,
+      message: 'Please try again or contact support',
+    });
+  }
+};
+
 function hasPermissionsToBoard(userId, boardId, permissions) {
   const query = db
     .prepare(`
@@ -149,4 +225,5 @@ function hasPermissionsToBoard(userId, boardId, permissions) {
 module.exports = {
   addStory,
   updateStory,
+  moveStory,
 };
