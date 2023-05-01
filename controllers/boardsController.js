@@ -79,14 +79,29 @@ const getBoard = (req, res) => {
         .prepare(`SELECT * FROM board_columns WHERE board_id = ?`)
         .all(board.id);
       
-      board.columns = columns;
+      board.columns = columns.map((column) => {
+        return {
+          id: column.id,
+          name: column.name,
+        };
+      });
 
       board.columns.forEach((column, i, columns) => {
         const stories = db
           .prepare(`SELECT * FROM stories WHERE column_id = ?`)
           .all(column.id);
         
-        columns[i].stories = stories;
+        columns[i].stories = stories.map((story) => {
+          return {
+            id: story.id,
+            name: story.name,
+            date: story.date,
+            type: story.type,
+            points: story.points,
+            state: story.state,
+            description: story.description,
+          };
+        });
       });
 
       res.json({
