@@ -25,7 +25,10 @@ const addStory = (req, res) => {
         state = 0;
       }
 
-      const description = req.body.description?.trim() || '';
+      let description = '';
+      if (req.body.description) {
+        description = req.body.description.trim();
+      }
       
       db
         .prepare(`INSERT INTO stories (column_id, name, type, points, state, description) VALUES (?, ?, ?, ?, ?, ?)`)
