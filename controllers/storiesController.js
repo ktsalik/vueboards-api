@@ -36,7 +36,7 @@ const addStory = (req, res) => {
       
       const story = db
         .prepare(`SELECT * FROM stories WHERE id = ?`)
-        .run(storyAdd.lastInsertRowid);
+        .get(storyAdd.lastInsertRowid);
 
       res.json({
         code: 200,
