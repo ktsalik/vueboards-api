@@ -9,18 +9,27 @@ const addStory = (req, res) => {
 
     if (isAllowed) {
       const name = req.body.name.trim();
-      let state = parseInt(req.body.state);
-      if (state < -1 || state > 4) {
-        state = 0;
+
+      let type = req.body.type;
+      if (['feature', 'bug', 'chore', 'release'].indexOf(type) === -1) {
+        type = 'other';
       }
+
       let points = parseInt(req.body.points);
       if (points < -1 || points > 5) {
         points = -1;
       }
+
+      let state = parseInt(req.body.state);
+      if (state < -1 || state > 5) {
+        state = 0;
+      }
+
+      const description = req.body.description?.trim() || '';
       
       db
-        .prepare(`INSERT INTO stories (column_id, name, state, points) VALUES (?, ?, ?, ?)`)
-        .run(columnId, name, state, points);
+        .prepare(`INSERT INTO stories (column_id, name, type, points, state, description) VALUES (?, ?, ?, ?, ?, ?)`)
+        .run(columnId, name, type, points, state, description);
       
       res.json({
         code: 200,
@@ -53,6 +62,7 @@ const updateStory = (req, res) => {
     const columnBelongsToBoard = db
       .prepare(`SELECT COUNT(*) AS count FROM board_columns WHERE board_id = ? AND id = ?`)
       .get(boardId, columnId).count === 1;
+    
     isAllowed &= columnBelongsToBoard;
 
     if (isAllowed) {
@@ -61,35 +71,39 @@ const updateStory = (req, res) => {
         .get(storyId, columnId);
 
       if (story) {
-        let name = story.name, state = story.state, points = story.points, description = story.description;
+        let name = story.name, type = story.type, points = story.points, state = story.state, description = story.description;
 
         if ('name' in req.body && req.body.name.trim().length > 0) {
           name = req.body.name.trim();
         }
 
-        if ('state' in req.body) {
-          state = parseInt(req.body.state);
-
-          if (state < -1 || state > 4) {
-            state = 0;
-          }
+        if ('type' in req.body && ['feature', 'bug', 'chore', 'release'].indexOf(type) > -1) {
+          type = req.body.type;
         }
 
         if ('points' in req.body) {
-          points = parseInt(req.body.points);
+          const p = parseInt(points);
 
-          if (points < -1 || points > 5) {
-            points = -1;
+          if (p >= -1 && p <= 5) {
+            points = p;
+          }
+        }
+
+        if ('state' in req.body) {
+          const s = parseInt(req.body.state);
+
+          if (s >= -1 && state <= 5) {
+            state = s;
           }
         }
 
         if ('description' in req.body) {
-          description = req.body.description;
+          description = req.body.description.trim();
         }
         
         db
-          .prepare(`UPDATE stories SET name = ?, state = ?, points = ?, description = ? WHERE id = ?`)
-          .run(name, state, points, description, storyId);
+          .prepare(`UPDATE stories SET name = ?, type = ?, points = ?, state = ?, description = ? WHERE id = ?`)
+          .run(name, type, points, state, description, storyId);
 
         res.json({
           code: 200,
