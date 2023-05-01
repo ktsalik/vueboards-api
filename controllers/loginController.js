@@ -75,12 +75,12 @@ const login = (req, res) => {
             .run(columnTodo.lastInsertRowid, 'Create website header', `The website should have a header component, visible everywhere at the very top of the page.`);
 
           db
-            .prepare(`INSERT INTO stories (column_id, name, description) VALUES (?, ?, ?)`)
-            .run(columnTodo.lastInsertRowid, 'Create website footer', `The website should have a footer component, visible everywhere at the very bottom of the page.`);
+            .prepare(`INSERT INTO stories (column_id, name, description, position) VALUES (?, ?, ?, ?)`)
+            .run(columnTodo.lastInsertRowid, 'Create website footer', `The website should have a footer component, visible everywhere at the very bottom of the page.`, 2);
 
           db
-            .prepare(`INSERT INTO stories (column_id, name, description) VALUES (?, ?, ?)`)
-            .run(columnTodo.lastInsertRowid, 'Create a menu', `The website should have a navigation menu, visible everywhere below the header component.`);
+            .prepare(`INSERT INTO stories (column_id, name, description, position) VALUES (?, ?, ?, ?)`)
+            .run(columnTodo.lastInsertRowid, 'Create a menu', `The website should have a navigation menu, visible everywhere below the header component.`, 3);
         
           db
             .prepare(`INSERT INTO stories (column_id, name) VALUES (?, ?)`)
