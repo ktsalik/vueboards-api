@@ -12,12 +12,12 @@ class Server {
     const app = express();
     const http = require('http');
     const server = http.createServer(app);
-    // const SocketIo = require("socket.io");
-    // const io = new SocketIo.Server(server, {
-    //   cors: {
-    //     origin: "*",
-    //   },
-    // });
+    const SocketIo = require("socket.io");
+    const io = new SocketIo.Server(server, {
+      cors: {
+        origin: "*",
+      },
+    });
 
     app.use(cors());
     app.use(express.json());
@@ -86,7 +86,7 @@ class Server {
 
     this.app = app;
     this.server = server;
-    // this.io = io;
+    this.io = io;
     this.port = port;
   }
 
@@ -95,7 +95,7 @@ class Server {
       console.log(`Vueboards server started at ${this.port}`)
     });
 
-    // return this.io;
+    return this.io;
   }
 }
 
