@@ -9,13 +9,16 @@ const addColumn = (req, res) => {
 
     if (isAllowed) {
       if (columnName.length > 0) {
-        db
+        const columnAdd = db
           .prepare(`INSERT INTO board_columns (board_id, name) VALUES (?, ?)`)
           .run(boardId, columnName);
         
         res.json({
           code: 200,
           status: 'ok',
+          data: {
+            newColumnId: columnAdd.lastInsertRowid,
+          },
         });
       } else {
         res.json({

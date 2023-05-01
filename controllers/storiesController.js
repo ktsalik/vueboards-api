@@ -26,17 +26,32 @@ const addStory = (req, res) => {
       }
 
       let description = '';
-      if (req.body.description) {
+      if ('description' in req.body && typeof req.body.description === 'string') {
         description = req.body.description.trim();
       }
       
-      db
+      const storyAdd = db
         .prepare(`INSERT INTO stories (column_id, name, type, points, state, description) VALUES (?, ?, ?, ?, ?, ?)`)
         .run(columnId, name, type, points, state, description);
       
+      const story = db
+        .prepare(`SELECT * FROM stories WHERE id = ?`)
+        .run(storyAdd.lastInsertRowid);
+
       res.json({
         code: 200,
         status: 'ok',
+        data: {
+          story: {
+            id: story.id,
+            name: story.name,
+            date: story.date,
+            type: story.type,
+            points: story.points,
+            state: story.state,
+            description: story.description,
+          },
+        },
       });
     } else {
       res.json({
@@ -100,7 +115,7 @@ const updateStory = (req, res) => {
           }
         }
 
-        if ('description' in req.body) {
+        if ('description' in req.body && typeof req.body.description === 'string') {
           description = req.body.description.trim();
         }
         
