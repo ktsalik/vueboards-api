@@ -47,7 +47,8 @@ const createTables = db.transaction(() => {
       type TEXT,
       state INTEGER,
       points INTEGER,
-      description TEXT
+      description TEXT,
+      position INTEGER DEFAULT 1
     );
   `).run();
 });

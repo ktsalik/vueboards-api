@@ -88,7 +88,7 @@ const getBoard = (req, res) => {
 
       board.columns.forEach((column, i, columns) => {
         const stories = db
-          .prepare(`SELECT * FROM stories WHERE column_id = ?`)
+          .prepare(`SELECT * FROM stories WHERE column_id = ? ORDER BY position ASC, id DESC`)
           .all(column.id);
         
         columns[i].stories = stories.map((story) => {
