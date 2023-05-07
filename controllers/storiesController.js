@@ -180,11 +180,18 @@ const moveStory = (req, res) => {
     }
 
     if (isAllowed) {
+      if (columnId !== toColumnId) {
+        db
+          .prepare(`UPDATE stories SET column_id = ? WHERE id = ?`)
+          .run(toColumnId, storyId);
+      }
+      
       const storiesInColumn = db
         .prepare(`
           SELECT *
           FROM stories
           WHERE column_id = ? AND id != ?
+          ORDER BY position ASC, id ASC
         `)
         .all(toColumnId, storyId);
 
@@ -192,11 +199,16 @@ const moveStory = (req, res) => {
         [storyId]: req.body.position,
       };
 
+      let pos = 1;
+      if (pos === parseInt(req.body.position)) {
+        pos++;
+      }
       for (let i = 0; i < storiesInColumn.length; i++) {
-        positions[storiesInColumn[i].id] = i + 1;
+        positions[storiesInColumn[i].id] = pos;
 
-        if (i + 1 >= req.body.position) {
-          positions[storiesInColumn[i].id]++;
+        pos++;
+        if (pos === parseInt(req.body.position)) {
+          pos++;
         }
       }
 
@@ -204,12 +216,6 @@ const moveStory = (req, res) => {
         db
           .prepare(`UPDATE stories SET position = ? WHERE id = ?`)
           .run(positions[storyId], storyId);
-      }
-
-      if (columnId !== toColumnId) {
-        db
-          .prepare(`UPDATE stories SET column_id = ? WHERE id = ?`)
-          .run(toColumnId, storyId);
       }
 
       res.json({
