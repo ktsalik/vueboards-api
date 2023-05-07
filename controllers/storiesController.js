@@ -101,12 +101,12 @@ const updateStory = (req, res) => {
           name = req.body.name.trim();
         }
 
-        if ('type' in req.body && ['feature', 'bug', 'chore', 'release'].indexOf(type) > -1) {
+        if ('type' in req.body && ['feature', 'bug', 'chore', 'release'].indexOf(req.body.type) > -1) {
           type = req.body.type;
         }
 
         if ('points' in req.body) {
-          const p = parseInt(points);
+          const p = parseInt(req.body.points);
 
           if (p >= -1 && p <= 5) {
             points = p;
