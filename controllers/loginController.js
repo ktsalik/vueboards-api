@@ -71,20 +71,20 @@ const login = (req, res) => {
             .run();
           
           db
-            .prepare(`INSERT INTO stories (column_id, name, description) VALUES (?, ?, ?)`)
-            .run(columnTodo.lastInsertRowid, 'Create website header', `The website should have a header component, visible everywhere at the very top of the page.`);
+            .prepare(`INSERT INTO stories (column_id, name, description, type, points, state) VALUES (?, ?, ?, ?, ?, ?)`)
+            .run(columnTodo.lastInsertRowid, 'Create website header', `The website should have a header component, visible everywhere at the very top of the page.`, 'feature', 3, 1);
 
           db
-            .prepare(`INSERT INTO stories (column_id, name, description, position) VALUES (?, ?, ?, ?)`)
-            .run(columnTodo.lastInsertRowid, 'Create website footer', `The website should have a footer component, visible everywhere at the very bottom of the page.`, 2);
+            .prepare(`INSERT INTO stories (column_id, name, description, position, type, points, state) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+            .run(columnTodo.lastInsertRowid, 'Create website footer', `The website should have a footer component, visible everywhere at the very bottom of the page.`, 2, 'feature', 3, 1);
 
           db
-            .prepare(`INSERT INTO stories (column_id, name, description, position) VALUES (?, ?, ?, ?)`)
-            .run(columnTodo.lastInsertRowid, 'Create a menu', `The website should have a navigation menu, visible everywhere below the header component.`, 3);
+            .prepare(`INSERT INTO stories (column_id, name, description, position, type, points, state) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+            .run(columnTodo.lastInsertRowid, 'Create a menu', `The website should have a navigation menu, visible everywhere below the header component.`, 3, 'feature', 3, 2);
         
           db
-            .prepare(`INSERT INTO stories (column_id, name) VALUES (?, ?)`)
-            .run(columnDone.lastInsertRowid, 'Create website project directory');
+            .prepare(`INSERT INTO stories (column_id, name, type, points, state) VALUES (?, ?, ?, ?, ?)`)
+            .run(columnDone.lastInsertRowid, 'Create website project directory', 'chore', 0, 4);
         });
         createDemoBoard();
 

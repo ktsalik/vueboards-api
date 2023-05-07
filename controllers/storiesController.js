@@ -15,13 +15,19 @@ const addStory = (req, res) => {
         type = 'other';
       }
 
-      let points = parseInt(req.body.points);
-      if (points < -1 || points > 5) {
+      let points;
+      const p = parseInt(req.body.points);
+      if (p >= -1 && p <= 5) {
+        points = p;
+      } else {
         points = -1;
       }
 
-      let state = parseInt(req.body.state);
-      if (state < -1 || state > 5) {
+      let state
+      const s = parseInt(req.body.state);
+      if (s >= -1 && s <= 4) {
+        state = s;
+      } else {
         state = 0;
       }
 
@@ -110,7 +116,7 @@ const updateStory = (req, res) => {
         if ('state' in req.body) {
           const s = parseInt(req.body.state);
 
-          if (s >= -1 && state <= 5) {
+          if (s >= -1 && state <= 4) {
             state = s;
           }
         }
