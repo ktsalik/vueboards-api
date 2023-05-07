@@ -88,7 +88,7 @@ const getBoard = (req, res) => {
 
       board.columns.forEach((column, i, columns) => {
         const stories = db
-          .prepare(`SELECT * FROM stories WHERE column_id = ? ORDER BY position ASC, id DESC`)
+          .prepare(`SELECT * FROM stories WHERE column_id = ? ORDER BY position ASC, id ASC`)
           .all(column.id);
         
         columns[i].stories = stories.map((story) => {
@@ -100,6 +100,7 @@ const getBoard = (req, res) => {
             points: story.points,
             state: story.state,
             description: story.description,
+            position: story.position,
           };
         });
       });
