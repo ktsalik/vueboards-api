@@ -43,7 +43,7 @@ const createTables = db.transaction(() => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       column_id INTEGER,
       name TEXT,
-      date TEXT,
+      date TEXT DEFAULT CURRENT_TIMESTAMP,
       type TEXT,
       state INTEGER,
       points INTEGER,

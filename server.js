@@ -5,6 +5,7 @@ const { createBoard, getBoards, updateBoard, getBoard } = require('./controllers
 const db = require('./database');
 const { addColumn, updateColumn, deleteColumn } = require('./controllers/columnsController');
 const { addStory, updateStory, moveStory } = require('./controllers/storiesController');
+const { searchUser, addUserToBoard } = require('./controllers/appController');
 
 class Server {
   constructor() {
@@ -67,9 +68,11 @@ class Server {
       });
     });
 
+    apiRouter.get( '/search-user/:searchQuery', searchUser);
     apiRouter.get( '/boards', getBoards);
     apiRouter.post('/boards/new', createBoard);
     apiRouter.get( '/boards/:boardId', getBoard);
+    apiRouter.post('/boards/:boardId/add-user', addUserToBoard);
     apiRouter.post('/boards/:boardId/update', updateBoard);
     apiRouter.post('/boards/:boardId/columns/add', addColumn);
     apiRouter.post('/boards/:boardId/columns/:columnId/update', updateColumn);

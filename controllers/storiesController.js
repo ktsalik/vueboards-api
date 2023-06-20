@@ -1,8 +1,9 @@
 const db = require('../database');
+const notificationsQueue = require('../notifications');
 
 const addStory = (req, res) => {
-  const boardId = req.params.boardId;
-  const columnId = req.params.columnId;
+  const boardId = parseInt(req.params.boardId);
+  const columnId = parseInt(req.params.columnId);
 
   try {
     const isAllowed = hasPermissionsToBoard(res.locals.userId, boardId, ['write', 'admin']);
@@ -44,6 +45,25 @@ const addStory = (req, res) => {
         .prepare(`SELECT * FROM stories WHERE id = ?`)
         .get(storyAdd.lastInsertRowid);
 
+      notificationsQueue.push({
+        userId: res.locals.userId,
+        boardId: boardId,
+        type: 'story-add',
+        data: {
+          columnId,
+          story: {
+            id: story.id,
+            name: story.name,
+            date: story.date,
+            type: story.type,
+            points: story.points,
+            state: story.state,
+            description: story.description,
+            position: story.position,
+          },
+        },
+      });
+
       res.json({
         code: 200,
         status: 'ok',
@@ -77,9 +97,9 @@ const addStory = (req, res) => {
 };
 
 const updateStory = (req, res) => {
-  const boardId = req.params.boardId;
-  const columnId = req.params.columnId;
-  const storyId = req.params.storyId;
+  const boardId = parseInt(req.params.boardId);
+  const columnId = parseInt(req.params.columnId);
+  const storyId = parseInt(req.params.storyId);
 
   try {
     let isAllowed = hasPermissionsToBoard(res.locals.userId, boardId, ['write', 'admin']);
@@ -101,7 +121,7 @@ const updateStory = (req, res) => {
           name = req.body.name.trim();
         }
 
-        if ('type' in req.body && ['feature', 'bug', 'chore', 'release'].indexOf(req.body.type) > -1) {
+        if ('type' in req.body && ['feature', 'bug', 'chore', 'release', 'other'].indexOf(req.body.type) > -1) {
           type = req.body.type;
         }
 
@@ -128,6 +148,25 @@ const updateStory = (req, res) => {
         db
           .prepare(`UPDATE stories SET name = ?, type = ?, points = ?, state = ?, description = ? WHERE id = ?`)
           .run(name, type, points, state, description, storyId);
+
+        notificationsQueue.push({
+          userId: res.locals.userId,
+          boardId: boardId,
+          type: 'story-update',
+          data: {
+            columnId,
+            story: {
+              id: storyId,
+              name: name,
+              date: story.date,
+              type: type,
+              points: points,
+              state: state,
+              description: description,
+              position: story.position,
+            },
+          },
+        });
 
         res.json({
           code: 200,
@@ -158,10 +197,10 @@ const updateStory = (req, res) => {
 };
 
 const moveStory = (req, res) => {
-  const boardId = req.params.boardId;
-  const columnId = req.params.columnId;
-  const storyId = req.params.storyId;
-  const toColumnId = req.params.toColumnId;
+  const boardId = parseInt(req.params.boardId);
+  const columnId = parseInt(req.params.columnId);
+  const storyId = parseInt(req.params.storyId);
+  const toColumnId = parseInt(req.params.toColumnId);
 
   try {
     let isAllowed = hasPermissionsToBoard(res.locals.userId, boardId, ['write', 'admin']);
@@ -223,6 +262,17 @@ const moveStory = (req, res) => {
           .prepare(`UPDATE stories SET position = ? WHERE id = ?`)
           .run(positions[storyId], storyId);
       }
+
+      notificationsQueue.push({
+        userId: res.locals.userId,
+        boardId: boardId,
+        type: 'story-move',
+        data: {
+          story: {
+            id: storyId,
+          },
+        },
+      });
 
       res.json({
         code: 200,
